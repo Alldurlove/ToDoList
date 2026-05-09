@@ -55,26 +55,14 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend dependencies
-        shell: bash
         env:
           NODE_ENV: development
           NPM_CONFIG_OMIT: ""
         run: |
-          npm config get omit
-          npm ci --include=dev
-          npm ls vue-tsc --depth=0 || npm install -D vue-tsc
-          npm ls @tauri-apps/cli --depth=0 || npm install -D @tauri-apps/cli
-
-      - name: Verify local build tools
-        shell: bash
-        run: |
-          node -e "console.log(require.resolve('vue-tsc/package.json'))"
-          node -e "console.log(require.resolve('@tauri-apps/cli/package.json'))"
-          npx --no-install vue-tsc --version
-          npx --no-install tauri --version
+          npm install --include=dev
+          npm install -D vue-tsc @tauri-apps/cli
 
       - name: Build desktop bundles
-        shell: bash
         run: npm run tauri:build -- ${{ matrix.bundle_args }}
 
       - name: Upload bundle artifacts
