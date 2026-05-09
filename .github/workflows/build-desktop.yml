@@ -83,4 +83,10 @@ jobs:
 
       - name: Attach files to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.rpm
