@@ -55,10 +55,10 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Build desktop bundles
-        run: npm run tauri:build -- ${{ matrix.bundle_args }}
+        run: npx @tauri-apps/cli build ${{ matrix.bundle_args }}
 
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@v4
