@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   build:
+    env:
+      NPM_CONFIG_PRODUCTION: "false"
     strategy:
       fail-fast: false
       matrix:
@@ -55,10 +57,16 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend dependencies
-        run: npm ci --include=dev
+        run: npm ci
+
+      - name: Verify local build tools
+        shell: bash
+        run: |
+          npx --no-install vue-tsc --version
+          npx --no-install tauri --version
 
       - name: Build desktop bundles
-        run: npx @tauri-apps/cli build ${{ matrix.bundle_args }}
+        run: npm run tauri:build -- ${{ matrix.bundle_args }}
 
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@v4
