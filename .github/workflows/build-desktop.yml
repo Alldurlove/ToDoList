@@ -55,10 +55,9 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend dependencies
-        shell: bash
-        run: |
-          npm config set production false
-          npm ci --include=dev
+        env:
+          NPM_CONFIG_OMIT: ""
+        run: npm ci --include=dev
 
       - name: Verify local build tools
         shell: bash
@@ -67,7 +66,6 @@ jobs:
           npx --no-install tauri --version
 
       - name: Build desktop bundles
-        shell: bash
         run: npm run tauri:build -- ${{ matrix.bundle_args }}
 
       - name: Upload bundle artifacts
