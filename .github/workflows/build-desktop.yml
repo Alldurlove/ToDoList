@@ -11,8 +11,6 @@ permissions:
 
 jobs:
   build:
-    env:
-      NPM_CONFIG_PRODUCTION: "false"
     strategy:
       fail-fast: false
       matrix:
@@ -57,7 +55,10 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend dependencies
-        run: npm ci
+        shell: bash
+        run: |
+          npm config set production false
+          npm ci --include=dev
 
       - name: Verify local build tools
         shell: bash
@@ -66,6 +67,7 @@ jobs:
           npx --no-install tauri --version
 
       - name: Build desktop bundles
+        shell: bash
         run: npm run tauri:build -- ${{ matrix.bundle_args }}
 
       - name: Upload bundle artifacts
@@ -81,10 +83,4 @@ jobs:
 
       - name: Attach files to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/release/bundle/**/*.msi
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.rpm
+        uses: softprops
