@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "ToDoList",
         "width": 900,
         "height": 700,
@@ -22,6 +23,10 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/icon.png", "icons/icon.svg"]
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png",
+      "icons/icon.svg"
+    ]
   }
 }
