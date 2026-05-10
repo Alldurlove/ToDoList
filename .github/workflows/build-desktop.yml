@@ -18,9 +18,12 @@ jobs:
           - os: windows-latest
             bundle_args: --bundles msi,nsis
             artifact_name: windows-installers
+            tauri_binary_pkg: "@tauri-apps/cli-win32-x64-msvc"
           - os: ubuntu-24.04
             bundle_args: --bundles deb,rpm
             artifact_name: linux-installers
+            tauri_binary_pkg: "@tauri-apps/cli-linux-x64-gnu"
+
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -54,17 +57,20 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - name: Install dependencies
+      - name: Install project dependencies
         env:
           NODE_ENV: development
           NPM_CONFIG_OMIT: ""
-        run: npm ci --include=dev
+        run: npm ci --include=dev --no-audit --no-fund
 
-      - name: Ensure required dev tools
-        run: npm install --no-save @tauri-apps/cli vue-tsc vite typescript
+      - name: Ensure Tauri CLI and platform binary
+        run: |
+          npm install --no-save @tauri-apps/cli@2.11.1 ${{ matrix.tauri_binary_pkg }}
+          node -e "console.log(require.resolve('@tauri-apps/cli/package.json'))"
+          node -e "console.log(require.resolve('${{ matrix.tauri_binary_pkg }}/package.json'))"
 
       - name: Build desktop bundles
-        run: node ./node_modules/@tauri-apps/cli/tauri.js build ${{ matrix.bundle_args }}
+        run: npx --yes tauri build ${{ matrix.bundle_args }}
 
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@v4
