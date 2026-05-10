@@ -36,6 +36,22 @@ jobs:
           NODE_ENV: development
         run: pnpm install --no-frozen-lockfile
 
+      - name: Ensure Windows ICO icon exists
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "src-tauri/icons" | Out-Null
+          python -m pip install --upgrade pip pillow
+          @"
+from PIL import Image, ImageDraw
+img = Image.new("RGBA", (512, 512), (17, 24, 39, 255))
+draw = ImageDraw.Draw(img)
+draw.rounded_rectangle((96, 96, 416, 416), radius=64, outline=(255, 255, 255, 255), width=24)
+draw.line((164, 268, 232, 336, 352, 196), fill=(255, 255, 255, 255), width=28)
+img.save("src-tauri/icons/icon.png")
+img.save("src-tauri/icons/icon.ico", sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
+"@ | Set-Content -Path make_icon.py -Encoding UTF8
+          python make_icon.py
+
       - name: Build Windows MSI
         run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles msi
 
