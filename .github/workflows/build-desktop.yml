@@ -60,9 +60,7 @@ jobs:
           NPM_CONFIG_OMIT: ""
         run: |
           npm ci --include=dev || npm install --include=dev
-
-      - name: Global fallback tools
-        run: npm install -g @tauri-apps/cli vue-tsc vite
+          npm install --no-save @tauri-apps/cli vue-tsc vite typescript
 
       - name: Build desktop bundles
         run: npx --yes @tauri-apps/cli build ${{ matrix.bundle_args }}
