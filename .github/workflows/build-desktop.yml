@@ -59,11 +59,18 @@ jobs:
           NODE_ENV: development
           NPM_CONFIG_OMIT: ""
         run: |
-          npm install --include=dev
-          npm install -D vue-tsc @tauri-apps/cli
+          npm ci --include=dev || npm install --include=dev
+          npm install -D @tauri-apps/cli vue-tsc vite
+
+      - name: Verify toolchain
+        run: |
+          node -v
+          npm -v
+          npx --yes @tauri-apps/cli --version
+          npx --yes vue-tsc --version
 
       - name: Build desktop bundles
-        run: npm run tauri:build -- ${{ matrix.bundle_args }}
+        run: npx --yes @tauri-apps/cli build ${{ matrix.bundle_args }}
 
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@v4
