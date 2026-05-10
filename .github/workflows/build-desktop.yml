@@ -60,14 +60,9 @@ jobs:
           NPM_CONFIG_OMIT: ""
         run: |
           npm ci --include=dev || npm install --include=dev
-          npm install -D @tauri-apps/cli vue-tsc vite
 
-      - name: Verify toolchain
-        run: |
-          node -v
-          npm -v
-          npx --yes @tauri-apps/cli --version
-          npx --yes vue-tsc --version
+      - name: Global fallback tools
+        run: npm install -g @tauri-apps/cli vue-tsc vite
 
       - name: Build desktop bundles
         run: npx --yes @tauri-apps/cli build ${{ matrix.bundle_args }}
