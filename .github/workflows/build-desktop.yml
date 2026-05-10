@@ -17,10 +17,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
 
@@ -66,7 +66,7 @@ jobs:
         run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles nsis
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-installers
           path: |
@@ -79,10 +79,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
 
@@ -118,19 +118,22 @@ jobs:
         run: |
           mkdir -p src-tauri/icons
           python3 -m pip install --upgrade pip pillow
-          python3 - <<'PY'
-from PIL import Image, ImageDraw
-from pathlib import Path
-Path("src-tauri/icons").mkdir(parents=True, exist_ok=True)
-img = Image.new("RGBA", (512, 512), (17, 24, 39, 255))
-draw = ImageDraw.Draw(img)
-draw.rounded_rectangle((96, 96, 416, 416), radius=64, outline=(255, 255, 255, 255), width=24)
-draw.line((164, 268, 232, 336, 352, 196), fill=(255, 255, 255, 255), width=28)
-img.save("src-tauri/icons/icon.png")
-img.save("src-tauri/icons/icon.ico", sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
-svg = '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#111827"/><path d="M148 256l72 72 144-144" fill="none" stroke="#ffffff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-Path("src-tauri/icons/icon.svg").write_text(svg, encoding="utf-8")
-PY
+
+          printf '%s\n' \
+          'from PIL import Image, ImageDraw' \
+          'from pathlib import Path' \
+          'Path("src-tauri/icons").mkdir(parents=True, exist_ok=True)' \
+          'img = Image.new("RGBA", (512, 512), (17, 24, 39, 255))' \
+          'draw = ImageDraw.Draw(img)' \
+          'draw.rounded_rectangle((96, 96, 416, 416), radius=64, outline=(255, 255, 255, 255), width=24)' \
+          'draw.line((164, 268, 232, 336, 352, 196), fill=(255, 255, 255, 255), width=28)' \
+          'img.save("src-tauri/icons/icon.png")' \
+          'img.save("src-tauri/icons/icon.ico", sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])' \
+          'svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"512\" height=\"512\" viewBox=\"0 0 512 512\"><rect width=\"512\" height=\"512\" rx=\"96\" fill=\"#111827\"/><path d=\"M148 256l72 72 144-144\" fill=\"none\" stroke=\"#ffffff\" stroke-width=\"42\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>"' \
+          'Path("src-tauri/icons/icon.svg").write_text(svg, encoding="utf-8")' \
+          > make_icon.py
+
+          python3 make_icon.py
 
       - name: Build Linux DEB
         run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles deb
@@ -139,7 +142,7 @@ PY
         run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles rpm
 
       - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-installers
           path: |
@@ -154,13 +157,13 @@ PY
 
     steps:
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: windows-installers
           path: artifacts/windows
 
       - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: linux-installers
           path: artifacts/linux
