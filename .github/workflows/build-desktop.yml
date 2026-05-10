@@ -17,27 +17,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: "20"
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+          pnpm -v
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install dependencies (Windows fallback to npm install)
-        shell: cmd
-        run: |
-          npm install --include=dev --no-audit --no-fund
-
-      - name: Build Windows bundles (MSI + NSIS)
-        uses: tauri-apps/tauri-action@v0
+      - name: Install dependencies
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: .
-          args: --bundles msi,nsis
+          NODE_ENV: development
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build Windows bundles
+        run: pnpm dlx @tauri-apps/cli@2.11.1 build --bundles msi,nsis
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -55,11 +55,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: "20"
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+          pnpm -v
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -77,15 +82,12 @@ jobs:
             patchelf
 
       - name: Install dependencies
-        run: npm install --include=dev --no-audit --no-fund
-
-      - name: Build Linux bundles (DEB + RPM)
-        uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: .
-          args: --bundles deb,rpm
+          NODE_ENV: development
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build Linux bundles
+        run: pnpm dlx @tauri-apps/cli@2.11.1 build --bundles deb,rpm
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
