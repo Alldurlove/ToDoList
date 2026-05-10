@@ -37,10 +37,10 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build Windows MSI
-        run: pnpm dlx @tauri-apps/cli@2.11.1 build --bundles msi
+        run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles msi
 
       - name: Build Windows NSIS
-        run: pnpm dlx @tauri-apps/cli@2.11.1 build --bundles nsis
+        run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles nsis
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -90,10 +90,10 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build Linux DEB
-        run: pnpm dlx @tauri-apps/cli@2.11.1 build --bundles deb
+        run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles deb
 
       - name: Build Linux RPM
-        run: pnpm dlx @tauri-apps/cli@2.11.1 build --bundles rpm
+        run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles rpm
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
