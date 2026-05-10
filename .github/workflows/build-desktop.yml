@@ -54,16 +54,17 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - name: Install frontend dependencies
+      - name: Install dependencies
         env:
           NODE_ENV: development
           NPM_CONFIG_OMIT: ""
-        run: |
-          npm ci --include=dev || npm install --include=dev
-          npm install --no-save @tauri-apps/cli vue-tsc vite typescript
+        run: npm ci --include=dev
+
+      - name: Ensure required dev tools
+        run: npm install --no-save @tauri-apps/cli vue-tsc vite typescript
 
       - name: Build desktop bundles
-        run: npx --yes @tauri-apps/cli build ${{ matrix.bundle_args }}
+        run: node ./node_modules/@tauri-apps/cli/tauri.js build ${{ matrix.bundle_args }}
 
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@v4
