@@ -38,19 +38,23 @@ jobs:
           NODE_ENV: development
         run: pnpm install --no-frozen-lockfile
 
-      - name: Create Windows icon files
+      - name: Generate icons (png + ico + svg)
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path "src-tauri/icons" | Out-Null
           python -m pip install --upgrade pip pillow
           $script = @(
             'from PIL import Image, ImageDraw',
+            'from pathlib import Path',
+            'Path("src-tauri/icons").mkdir(parents=True, exist_ok=True)',
             'img = Image.new("RGBA", (512, 512), (17, 24, 39, 255))',
             'draw = ImageDraw.Draw(img)',
             'draw.rounded_rectangle((96, 96, 416, 416), radius=64, outline=(255, 255, 255, 255), width=24)',
             'draw.line((164, 268, 232, 336, 352, 196), fill=(255, 255, 255, 255), width=28)',
             'img.save("src-tauri/icons/icon.png")',
-            'img.save("src-tauri/icons/icon.ico", sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])'
+            'img.save("src-tauri/icons/icon.ico", sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])',
+            'svg = """<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#111827"/><path d="M148 256l72 72 144-144" fill="none" stroke="#ffffff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/></svg>"""',
+            'Path("src-tauri/icons/icon.svg").write_text(svg, encoding="utf-8")'
           )
           $script | Set-Content -Path make_icon.py -Encoding UTF8
           python make_icon.py
@@ -101,12 +105,32 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            python3-pip
 
       - name: Install dependencies
         env:
           NODE_ENV: development
         run: pnpm install --no-frozen-lockfile
+
+      - name: Generate icons (png + ico + svg)
+        shell: bash
+        run: |
+          mkdir -p src-tauri/icons
+          python3 -m pip install --upgrade pip pillow
+          python3 - <<'PY'
+from PIL import Image, ImageDraw
+from pathlib import Path
+Path("src-tauri/icons").mkdir(parents=True, exist_ok=True)
+img = Image.new("RGBA", (512, 512), (17, 24, 39, 255))
+draw = ImageDraw.Draw(img)
+draw.rounded_rectangle((96, 96, 416, 416), radius=64, outline=(255, 255, 255, 255), width=24)
+draw.line((164, 268, 232, 336, 352, 196), fill=(255, 255, 255, 255), width=28)
+img.save("src-tauri/icons/icon.png")
+img.save("src-tauri/icons/icon.ico", sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
+svg = '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#111827"/><path d="M148 256l72 72 144-144" fill="none" stroke="#ffffff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+Path("src-tauri/icons/icon.svg").write_text(svg, encoding="utf-8")
+PY
 
       - name: Build Linux DEB
         run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles deb
