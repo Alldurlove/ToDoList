@@ -1,7 +1,7 @@
 import { computed, ref } from "vue";
 import { reminderService } from "../services/reminderService";
 import { todoApi } from "../services/todoApi";
-import type { Todo } from "../types/todo";
+import type { CreateTodoInput, Todo } from "../types/todo";
 
 const items = ref<Todo[]>([]);
 const loading = ref(false);
@@ -25,14 +25,18 @@ export function useTodoStore() {
     }
   }
 
-  async function addTodo(title: string) {
-    const normalized = title.trim();
+  async function addTodo(input: CreateTodoInput) {
+    const normalized = input.title.trim();
     if (!normalized) {
       return;
     }
     error.value = null;
     try {
-      const todo = await todoApi.createTodo({ title: normalized });
+      const todo = await todoApi.createTodo({
+        title: normalized,
+        dueTag: input.dueTag,
+        priorityTag: input.priorityTag
+      });
       items.value.unshift(todo);
       await reminderService.schedule(todo);
     } catch (err) {

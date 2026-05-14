@@ -1,4 +1,6 @@
 export type ReminderChannel = "system";
+export type DueTag = "today" | "within5Hours" | "threeDays" | "thisWeek" | "thisMonth" | "longTerm";
+export type PriorityTag = "low" | "medium" | "high";
 
 export interface ReminderConfig {
   enabled: boolean;
@@ -13,10 +15,13 @@ export interface Todo {
   createdAt: string;
   updatedAt: string;
   dueAt?: string;
+  dueTag?: DueTag;
+  priorityTag?: PriorityTag;
   reminder?: ReminderConfig;
 }
 
 export interface CreateTodoInput {
   title: string;
-  dueAt?: string;
+  dueTag?: DueTag;
+  priorityTag?: PriorityTag;
 }

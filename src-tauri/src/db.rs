@@ -1,4 +1,4 @@
-use crate::models::{CreateTodoInput, ReminderConfig, Todo};
+use crate::models::{CreateTodoInput, DueTag, PriorityTag, ReminderConfig, Todo};
 use chrono::Utc;
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
@@ -35,18 +35,52 @@ fn migrate(conn: &Connection) -> Result<(), String> {
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL,
           due_at TEXT NULL,
+          due_tag TEXT NULL,
+          priority_tag TEXT NULL,
           reminder_json TEXT NULL
         );
         "
     )
-    .map_err(|err| format!("Database migration failed: {err}"))
+    .map_err(|err| format!("Database migration failed: {err}"))?;
+
+    ensure_column(conn, "todos", "due_tag", "TEXT NULL")?;
+    ensure_column(conn, "todos", "priority_tag", "TEXT NULL")?;
+    Ok(())
+}
+
+fn ensure_column(conn: &Connection, table: &str, column: &str, definition: &str) -> Result<(), String> {
+    let mut stmt = conn
+        .prepare(&format!("PRAGMA table_info({table})"))
+        .map_err(|err| format!("Failed to prepare schema query: {err}"))?;
+
+    let columns = stmt
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|err| format!("Failed to query schema columns: {err}"))?;
+
+    let mut exists = false;
+    for col in columns {
+        if col.map_err(|err| format!("Failed to parse schema column: {err}"))? == column {
+            exists = true;
+            break;
+        }
+    }
+
+    if !exists {
+        conn.execute(
+            &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+            [],
+        )
+        .map_err(|err| format!("Failed to add column {column}: {err}"))?;
+    }
+
+    Ok(())
 }
 
 pub fn list_todos(conn: &Connection) -> Result<Vec<Todo>, String> {
     let mut stmt = conn
         .prepare(
             "
-            SELECT id, title, completed, created_at, updated_at, due_at, reminder_json
+            SELECT id, title, completed, created_at, updated_at, due_at, due_tag, priority_tag, reminder_json
             FROM todos
             ORDER BY completed ASC, created_at DESC
             "
@@ -55,7 +89,9 @@ pub fn list_todos(conn: &Connection) -> Result<Vec<Todo>, String> {
 
     let rows = stmt
         .query_map([], |row| {
-            let reminder_json: Option<String> = row.get(6)?;
+            let due_tag_raw: Option<String> = row.get(6)?;
+            let priority_tag_raw: Option<String> = row.get(7)?;
+            let reminder_json: Option<String> = row.get(8)?;
             let reminder = reminder_json
                 .as_deref()
                 .and_then(|raw| serde_json::from_str::<ReminderConfig>(raw).ok());
@@ -67,6 +103,8 @@ pub fn list_todos(conn: &Connection) -> Result<Vec<Todo>, String> {
                 created_at: row.get(3)?,
                 updated_at: row.get(4)?,
                 due_at: row.get(5)?,
+                due_tag: due_tag_raw.as_deref().and_then(DueTag::from_db_value),
+                priority_tag: priority_tag_raw.as_deref().and_then(PriorityTag::from_db_value),
                 reminder,
             })
         })
@@ -87,14 +125,16 @@ pub fn create_todo(conn: &Connection, input: &CreateTodoInput) -> Result<Todo, S
         completed: false,
         created_at: now.clone(),
         updated_at: now,
-        due_at: input.due_at.clone(),
+        due_at: None,
+        due_tag: input.due_tag.clone(),
+        priority_tag: input.priority_tag.clone(),
         reminder: None,
     };
 
     conn.execute(
         "
-        INSERT INTO todos (id, title, completed, created_at, updated_at, due_at, reminder_json)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+        INSERT INTO todos (id, title, completed, created_at, updated_at, due_at, due_tag, priority_tag, reminder_json)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
         ",
         params![
             todo.id,
@@ -103,6 +143,8 @@ pub fn create_todo(conn: &Connection, input: &CreateTodoInput) -> Result<Todo, S
             todo.created_at,
             todo.updated_at,
             todo.due_at,
+            todo.due_tag.as_ref().map(DueTag::as_db_value),
+            todo.priority_tag.as_ref().map(PriorityTag::as_db_value),
             Option::<String>::None
         ]
     )
@@ -132,7 +174,7 @@ fn get_todo(conn: &Connection, id: &str) -> Result<Todo, String> {
     let mut stmt = conn
         .prepare(
             "
-            SELECT id, title, completed, created_at, updated_at, due_at, reminder_json
+            SELECT id, title, completed, created_at, updated_at, due_at, due_tag, priority_tag, reminder_json
             FROM todos
             WHERE id = ?1
             "
@@ -140,7 +182,9 @@ fn get_todo(conn: &Connection, id: &str) -> Result<Todo, String> {
         .map_err(|err| format!("Failed to prepare get query: {err}"))?;
 
     stmt.query_row([id], |row| {
-        let reminder_json: Option<String> = row.get(6)?;
+        let due_tag_raw: Option<String> = row.get(6)?;
+        let priority_tag_raw: Option<String> = row.get(7)?;
+        let reminder_json: Option<String> = row.get(8)?;
         let reminder = reminder_json
             .as_deref()
             .and_then(|raw| serde_json::from_str::<ReminderConfig>(raw).ok());
@@ -151,6 +195,8 @@ fn get_todo(conn: &Connection, id: &str) -> Result<Todo, String> {
             created_at: row.get(3)?,
             updated_at: row.get(4)?,
             due_at: row.get(5)?,
+            due_tag: due_tag_raw.as_deref().and_then(DueTag::from_db_value),
+            priority_tag: priority_tag_raw.as_deref().and_then(PriorityTag::from_db_value),
             reminder,
         })
     })
