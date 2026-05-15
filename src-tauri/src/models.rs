@@ -80,6 +80,7 @@ pub struct Todo {
     pub created_at: String,
     pub updated_at: String,
     pub due_at: Option<String>,
+    pub completed_at: Option<String>,
     pub due_tag: Option<DueTag>,
     pub priority_tag: Option<PriorityTag>,
     pub reminder: Option<ReminderConfig>,

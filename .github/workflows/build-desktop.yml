@@ -3,6 +3,8 @@ name: Build Desktop Installers
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -10,6 +12,7 @@ permissions:
   contents: write
 
 jobs:
+<<<<<<< HEAD
   build:
     env:
       NPM_CONFIG_PRODUCTION: "false"
@@ -24,19 +27,92 @@ jobs:
             bundle_args: --bundles deb,rpm
             artifact_name: linux-installers
     runs-on: ${{ matrix.os }}
+=======
+  build-windows:
+    runs-on: windows-latest
+>>>>>>> d3ead5198a0447d600e8120bf5e1c71bf03f198c
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
-          cache: npm
+          node-version: "20"
 
-      - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+          pnpm -v
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Generate icons (png + ico + svg)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "src-tauri/icons" | Out-Null
+          python -m pip install --upgrade pip pillow
+          $script = @(
+            'from PIL import Image, ImageDraw',
+            'from pathlib import Path',
+            'Path("src-tauri/icons").mkdir(parents=True, exist_ok=True)',
+            'img = Image.new("RGBA", (512, 512), (17, 24, 39, 255))',
+            'draw = ImageDraw.Draw(img)',
+            'draw.rounded_rectangle((96, 96, 416, 416), radius=64, outline=(255, 255, 255, 255), width=24)',
+            'draw.line((164, 268, 232, 336, 352, 196), fill=(255, 255, 255, 255), width=28)',
+            'img.save("src-tauri/icons/icon.png")',
+            'img.save("src-tauri/icons/icon.ico", sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])',
+            'svg = """<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#111827"/><path d="M148 256l72 72 144-144" fill="none" stroke="#ffffff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/></svg>"""',
+            'Path("src-tauri/icons/icon.svg").write_text(svg, encoding="utf-8")'
+          )
+          $script | Set-Content -Path make_icon.py -Encoding UTF8
+          python make_icon.py
+
+      - name: Build Windows MSI
+        run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles msi
+
+      - name: Build Windows NSIS
+        run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles nsis
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-installers
+          path: |
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
+          if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+          pnpm -v
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -46,14 +122,46 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            python3-pip
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
+      - name: Generate icons (png + ico + svg)
+        shell: bash
+        run: |
+          mkdir -p src-tauri/icons
+          python3 -m pip install --upgrade pip pillow
+
+          printf '%s\n' \
+          'from PIL import Image, ImageDraw' \
+          'from pathlib import Path' \
+          'Path("src-tauri/icons").mkdir(parents=True, exist_ok=True)' \
+          'img = Image.new("RGBA", (512, 512), (17, 24, 39, 255))' \
+          'draw = ImageDraw.Draw(img)' \
+          'draw.rounded_rectangle((96, 96, 416, 416), radius=64, outline=(255, 255, 255, 255), width=24)' \
+          'draw.line((164, 268, 232, 336, 352, 196), fill=(255, 255, 255, 255), width=28)' \
+          'img.save("src-tauri/icons/icon.png")' \
+          'img.save("src-tauri/icons/icon.ico", sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])' \
+          'svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"512\" height=\"512\" viewBox=\"0 0 512 512\"><rect width=\"512\" height=\"512\" rx=\"96\" fill=\"#111827\"/><path d=\"M148 256l72 72 144-144\" fill=\"none\" stroke=\"#ffffff\" stroke-width=\"42\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>"' \
+          'Path("src-tauri/icons/icon.svg").write_text(svg, encoding="utf-8")' \
+          > make_icon.py
+
+          python3 make_icon.py
+
+      - name: Build Linux DEB
+        run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles deb
+
+      - name: Build Linux RPM
+        run: pnpm dlx @tauri-apps/cli@2.11.0 build --bundles rpm
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v5
         with:
+<<<<<<< HEAD
           workspaces: src-tauri
 
       - name: Install frontend dependencies
@@ -72,19 +180,37 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
+=======
+          name: linux-installers
+>>>>>>> d3ead5198a0447d600e8120bf5e1c71bf03f198c
           path: |
-            src-tauri/target/release/bundle/**/*.msi
-            src-tauri/target/release/bundle/**/*.exe
             src-tauri/target/release/bundle/**/*.deb
             src-tauri/target/release/bundle/**/*.rpm
           if-no-files-found: error
 
-      - name: Attach files to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-installers
+          path: artifacts/windows
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: linux-installers
+          path: artifacts/linux
+
+      - name: Publish release assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            src-tauri/target/release/bundle/**/*.msi
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.rpm
+            artifacts/windows/**/*.msi
+            artifacts/windows/**/*.exe
+            artifacts/linux/**/*.deb
+            artifacts/linux/**/*.rpm

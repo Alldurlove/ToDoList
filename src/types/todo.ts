@@ -15,6 +15,7 @@ export interface Todo {
   createdAt: string;
   updatedAt: string;
   dueAt?: string;
+  completedAt?: string;
   dueTag?: DueTag;
   priorityTag?: PriorityTag;
   reminder?: ReminderConfig;

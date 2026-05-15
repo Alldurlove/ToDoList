@@ -19,7 +19,8 @@ pub fn run() {
             commands::list_todos,
             commands::create_todo,
             commands::set_completed,
-            commands::delete_todo
+            commands::delete_todo,
+            commands::get_system_time
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

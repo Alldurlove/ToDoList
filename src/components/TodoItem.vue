@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import type { Todo } from "../types/todo";
 
-defineProps<{
+const props = defineProps<{
   todo: Todo;
 }>();
 
@@ -24,6 +25,47 @@ const priorityTagLabel: Record<string, string> = {
   medium: "中优先",
   low: "低优先"
 };
+
+const now = ref(Date.now());
+let timer: number | null = null;
+
+function formatRemaining(dueAt?: string) {
+  if (!dueAt) {
+    return null;
+  }
+
+  const diffMs = new Date(dueAt).getTime() - now.value;
+  if (diffMs <= 0) {
+    return "已到期";
+  }
+
+  const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (hours <= 24) {
+    return `剩余 ${hours}h`;
+  }
+
+  if (days <= 30) {
+    return `剩余 ${days}日`;
+  }
+
+  return "一个月以上";
+}
+
+const remainingText = computed(() => formatRemaining(props.todo.dueAt));
+
+onMounted(() => {
+  timer = window.setInterval(() => {
+    now.value = Date.now();
+  }, 60_000);
+});
+
+onUnmounted(() => {
+  if (timer !== null) {
+    window.clearInterval(timer);
+  }
+});
 </script>
 
 <template>
@@ -40,6 +82,7 @@ const priorityTagLabel: Record<string, string> = {
         <div class="todo-item__tags">
           <span v-if="todo.dueTag" class="todo-item__tag">{{ dueTagLabel[todo.dueTag] }}</span>
           <span v-if="todo.priorityTag" class="todo-item__tag todo-item__tag--priority">{{ priorityTagLabel[todo.priorityTag] }}</span>
+          <span v-if="remainingText" class="todo-item__tag todo-item__tag--time">{{ remainingText }}</span>
         </div>
       </div>
     </label>

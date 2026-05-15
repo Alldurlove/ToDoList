@@ -1,6 +1,7 @@
 use crate::db;
 use crate::db::DbState;
 use crate::models::{CreateTodoInput, Todo};
+use chrono::Utc;
 use tauri::State;
 
 #[tauri::command]
@@ -37,4 +38,9 @@ pub fn delete_todo(state: State<DbState>, id: String) -> Result<(), String> {
         .lock()
         .map_err(|err| format!("Failed to lock DB connection: {err}"))?;
     db::delete_todo(&conn, &id)
+}
+
+#[tauri::command]
+pub fn get_system_time() -> String {
+    Utc::now().to_rfc3339()
 }

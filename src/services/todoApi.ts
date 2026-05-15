@@ -6,6 +6,7 @@ export interface TodoApi {
   createTodo(input: CreateTodoInput): Promise<Todo>;
   setCompleted(id: string, completed: boolean): Promise<Todo>;
   deleteTodo(id: string): Promise<void>;
+  getSystemTime(): Promise<string>;
 }
 
 class TauriTodoApi implements TodoApi {
@@ -23,6 +24,10 @@ class TauriTodoApi implements TodoApi {
 
   async deleteTodo(id: string): Promise<void> {
     return invoke<void>("delete_todo", { id });
+  }
+
+  async getSystemTime(): Promise<string> {
+    return invoke<string>("get_system_time");
   }
 }
 

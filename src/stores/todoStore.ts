@@ -6,15 +6,35 @@ import type { CreateTodoInput, Todo } from "../types/todo";
 const items = ref<Todo[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const systemTime = ref<string>(new Date().toISOString());
+
+function isSameDay(isoA: string, isoB: string) {
+  const a = new Date(isoA);
+  const b = new Date(isoB);
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
 
 export function useTodoStore() {
   const pendingItems = computed(() => items.value.filter((item) => !item.completed));
-  const completedItems = computed(() => items.value.filter((item) => item.completed));
+  const completedItems = computed(() =>
+    items.value.filter(
+      (item) =>
+        item.completed &&
+        Boolean(item.completedAt) &&
+        isSameDay(item.completedAt ?? "", systemTime.value)
+    )
+  );
 
   async function refresh() {
     loading.value = true;
     error.value = null;
     try {
+      const now = await todoApi.getSystemTime();
+      systemTime.value = now;
       const todos = await todoApi.listTodos();
       items.value = todos;
       await reminderService.resync(todos);
@@ -70,13 +90,24 @@ export function useTodoStore() {
     }
   }
 
+  async function syncSystemTime() {
+    try {
+      const now = await todoApi.getSystemTime();
+      systemTime.value = now;
+    } catch {
+      systemTime.value = new Date().toISOString();
+    }
+  }
+
   return {
     items,
     pendingItems,
     completedItems,
+    systemTime,
     loading,
     error,
     refresh,
+    syncSystemTime,
     addTodo,
     toggleTodo,
     removeTodo
