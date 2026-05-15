@@ -12,25 +12,8 @@ permissions:
   contents: write
 
 jobs:
-<<<<<<< HEAD
-  build:
-    env:
-      NPM_CONFIG_PRODUCTION: "false"
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            bundle_args: --bundles msi,nsis
-            artifact_name: windows-installers
-          - os: ubuntu-24.04
-            bundle_args: --bundles deb,rpm
-            artifact_name: linux-installers
-    runs-on: ${{ matrix.os }}
-=======
   build-windows:
     runs-on: windows-latest
->>>>>>> d3ead5198a0447d600e8120bf5e1c71bf03f198c
 
     steps:
       - name: Checkout
@@ -161,28 +144,7 @@ jobs:
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v5
         with:
-<<<<<<< HEAD
-          workspaces: src-tauri
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Verify local build tools
-        shell: bash
-        run: |
-          npx --no-install vue-tsc --version
-          npx --no-install tauri --version
-
-      - name: Build desktop bundles
-        run: npm run tauri:build -- ${{ matrix.bundle_args }}
-
-      - name: Upload bundle artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-=======
           name: linux-installers
->>>>>>> d3ead5198a0447d600e8120bf5e1c71bf03f198c
           path: |
             src-tauri/target/release/bundle/**/*.deb
             src-tauri/target/release/bundle/**/*.rpm
